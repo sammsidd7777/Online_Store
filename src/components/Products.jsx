@@ -20,23 +20,33 @@ const Products = () => {
     dispatch(addCart(product));
   };
 
-  useEffect(() => {
-    const getProducts = async () => {
+useEffect(() => {
+  const controller = new AbortController();
+
+  const getProducts = async () => {
+    try {
       setLoading(true);
-      const response = await fetch("https://fakestoreapi.com/products/");
-      if (componentMounted) {
-        setData(await response.clone().json());
-        setFilter(await response.json());
-        setLoading(false);
+      const response = await fetch("https://fakestoreapi.com/products/", {
+        signal: controller.signal,
+      });
+      const products = await response.json();
+      setData(products);
+      setFilter(products);
+      setLoading(false);
+    } catch (error) {
+      if (error.name !== "AbortError") {
+        console.error("Fetch error:", error);
       }
+    }
+  };
 
-      return () => {
-        componentMounted = false;
-      };
-    };
+  getProducts();
 
-    getProducts();
-  }, []);
+  return () => {
+    controller.abort(); // cleanup
+  };
+}, []);
+
 
   const Loading = () => {
     return (
